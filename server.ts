@@ -18,7 +18,6 @@ app.get("/api/technologies", async (_req, res) => {
     const result = await pool.query(
       "SELECT name, confidence, category FROM technologies ORDER BY category, confidence DESC",
     );
-    console.log(result);
     res.json(result.rows);
   } catch (error) {
     console.error("Failed to fetch technologies", error);

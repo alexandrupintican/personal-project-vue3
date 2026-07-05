@@ -14,7 +14,9 @@ function navigateHome() {
 <template>
   <section class="grid footer">
     <StackFooter />
-    <div class="col--6"></div>
+    <div class="col--6">
+      <span>2nd part of footer</span>
+    </div>
   </section>
 </template>
 
