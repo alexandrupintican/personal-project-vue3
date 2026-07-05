@@ -8,7 +8,6 @@ import { defineAsyncComponent, ref } from "vue";
 // define pages
 const Pages = {
   homePage: defineAsyncComponent(() => import("@/pages/HomePage.vue")),
-  flowerPage: defineAsyncComponent(() => import("@/pages/FlowerPage.vue")),
 };
 
 // composables

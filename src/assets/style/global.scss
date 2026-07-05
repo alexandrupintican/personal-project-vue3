@@ -38,7 +38,6 @@ p {
 span {
   text-align: center;
   vertical-align: middle;
-  line-height: 3rem;
 }
 
 button,
@@ -50,17 +49,6 @@ select {
 html {
   font-family: var(--font-family-primary);
   text-transform: uppercase;
-}
-
-#app {
-  max-width: var(--container-max-width);
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
 }
 
 .grid {

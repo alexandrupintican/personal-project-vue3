@@ -5,12 +5,11 @@ import { PageAliases } from "@/utils/pages";
 
 const { setPage } = usePages();
 function switchView() {
-  setPage(PageAliases.FLOWER_PAGE);
+  // setPage();
 }
 </script>
 
 <template>
-  <AppButton label="Press me to switch View" @click="switchView()" />
   <div class="content"></div>
 </template>
 

@@ -2,6 +2,7 @@
 import usePages from "@/composables/usePages";
 import { PageAliases } from "@/utils/pages";
 import AppLogo from "@/assets/svg/logo.svg";
+import StackFooter from "@/components/footer/StackFooter.vue";
 
 const { setPage } = usePages();
 
@@ -12,8 +13,10 @@ function navigateHome() {
 
 <template>
   <section class="grid footer">
-    <div>Stack</div>
-    <div>In progress</div>
+    <StackFooter />
+    <div class="col--6">
+      <span>2nd part of footer</span>
+    </div>
   </section>
 </template>
 

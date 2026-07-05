@@ -6,14 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 yarn install      # install dependencies (Yarn 1, see packageManager in package.json)
-yarn dev           # start dev server at http://localhost:3000
+yarn dev           # start frontend dev server at http://localhost:3000
 yarn build         # type-aware production build, outputs to dist/
 yarn preview       # preview the production build locally
+yarn server        # start the backend API (nodemon + ts-node) at http://localhost:3001
+yarn branch        # interactive helper (tools/branch.sh) to cut a feature-/chore-/fix- branch off develop
 ```
+
+Frontend and backend are run as two separate processes in dev (`yarn dev` + `yarn server`); there is no single command that starts both.
+
+`.env` (gitignored) is required for the backend: `SERVER_PORT`, `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`. `CLIENT_PORT` is also defined there but the Vite dev server port is actually hardcoded in `vite.config.js` (`server.port`), not read from this var.
 
 There is no test suite and no lint/format script defined in package.json — ESLint and Prettier are installed as devDependencies and wired into the editor (`.vscode/settings.json`: format-on-save + `source.fixAll` via `esbenp.prettier-vscode`), but there is no committed ESLint/Prettier config file and no CLI script to invoke them from the terminal.
 
-Docker: `docker build -t personal-project-vue3 .` then `docker run -p 8080:80 personal-project-vue3` (Dockerfile runs `yarn dev`, not a production server — it's a dev-mode container).
+Docker: `docker build -t personal-project-vue3 .` then `docker run -p 8080:80 personal-project-vue3` (Dockerfile runs `yarn dev`, not a production server — it's a dev-mode container). The Dockerfile only runs the frontend; it does not start the backend.
 
 ## Architecture
 
@@ -32,6 +38,19 @@ State that needs to survive across component instances (like `pageRef`/`layoutRe
 - The convention used by every composable in `src/composables/` (`useLayout.ts`, `usePages.ts`) is: check `storage.get(key)` for an already-initialized instance; if present return it as a singleton; otherwise create the refs/functions and register them with `storage.storeAndGet(key, {...})`.
 
 When adding a new composable that needs shared, app-wide reactive state, follow this same `initVault` get-or-create pattern rather than introducing a new state library.
+
+### Backend ([server.ts](server.ts))
+
+A minimal Express + `pg` API lives at the repo root as a single file, separate from the Vite-built frontend:
+
+- `server.ts` opens a `pg` `Pool` from `DATABASE_*` env vars and exposes routes like `GET /api/technologies` that query Postgres directly and return rows as JSON.
+- It has its own TS project, [tsconfig.server.json](tsconfig.server.json), which extends the root `tsconfig.json` but overrides `module`/`moduleResolution` to CommonJS/`node` and narrows `include`/`exclude` to just `server.ts`. This isolation is required: the root tsconfig uses `moduleResolution: "bundler"` for the frontend, and letting the server config's `include` inherit the root's `src/**` glob causes TypeScript to re-check every Vue/frontend file under Node resolution and break `vue`'s package-export resolution. Any new server-side file must be added to this narrowed `include`, not the root tsconfig.
+- `yarn server` runs it via `nodemon` + `ts-node -P tsconfig.server.json`, independent of `yarn dev`.
+- In dev, `vite.config.js`'s `server.proxy` forwards `/api/*` requests to `http://localhost:3001` (the backend), so frontend code can call `fetch("/api/...")` with no CORS handling needed.
+
+### Response-model wrapper convention
+
+Raw API/DB response shapes (defined as plain types under `src/types/models/`, e.g. `AppResponse`, `Technology`) are not consumed directly in components. Each has a paired class in `src/models/` (`AppModel`, `TechnologyModel`) that wraps the raw object and exposes `getX()` accessor methods instead of raw field access — see `AppModel.getTitle()`/`getMetaTags()` and `TechnologyModel.getName()`/`getConfidence()`/`getCategory()`. Follow this wrapper pattern for new API-backed data rather than typing components directly against the raw response shape.
 
 ### Other structure
 
