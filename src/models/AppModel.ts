@@ -1,4 +1,4 @@
-import { AppResponse, MetaTags } from "@/types/models/AppModel";
+import type { AppResponse, MetaTags } from "@/types/models/AppModel";
 
 export class AppModel {
   private _response: AppResponse;
