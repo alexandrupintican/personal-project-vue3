@@ -5,7 +5,7 @@ import { PageAliases } from "@/utils/pages";
 
 const { setPage } = usePages();
 function switchView() {
-  setPage(PageAliases.FLOWER_PAGE);
+  // setPage();
 }
 </script>
 
