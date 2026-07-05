@@ -1,0 +1,25 @@
+// COLORS
+$color-primary: #1b1b1b;
+$color-secondary: #888;
+$color-white: #fff;
+$color-black: #000;
+
+// FONTS
+$font-family-primary: Arial;
+$font-base: 14px !default;
+
+// SIZES
+$container-max-width: 1920px;
+
+// GRID
+$grid-columns: 12;
+$grid-gap: 15px !default;
+$grid-margin: 20px;
+
+// BREAKPOINTS
+$breakpoints: (
+  xs: 480px,
+  sm: 768px,
+  md: 960px,
+  lg: 1280px,
+);
