@@ -1,10 +1,14 @@
 @use "variables" as *;
 @use "theme" as *;
-@use "keyframes" as *;
 @use "mixins" as *;
 
 body {
   margin: 0;
+}
+
+#app {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
 }
 
 h1,

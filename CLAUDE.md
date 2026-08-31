@@ -41,7 +41,7 @@ When adding a new composable that needs shared, app-wide reactive state, follow 
 
 ### Backend ([server.ts](server.ts))
 
-A minimal Express + `pg` API lives at the repo root as a single file, separate from the Vite-built frontend:
+A minimal Hono + `pg` API lives at the repo root as a single file, separate from the Vite-built frontend:
 
 - `server.ts` opens a `pg` `Pool` from `DATABASE_*` env vars and exposes routes like `GET /api/technologies` that query Postgres directly and return rows as JSON.
 - It has its own TS project, [tsconfig.server.json](tsconfig.server.json), which extends the root `tsconfig.json` but overrides `module`/`moduleResolution` to CommonJS/`node` and narrows `include`/`exclude` to just `server.ts`. This isolation is required: the root tsconfig uses `moduleResolution: "bundler"` for the frontend, and letting the server config's `include` inherit the root's `src/**` glob causes TypeScript to re-check every Vue/frontend file under Node resolution and break `vue`'s package-export resolution. Any new server-side file must be added to this narrowed `include`, not the root tsconfig.

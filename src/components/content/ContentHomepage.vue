@@ -15,6 +15,6 @@ function switchView() {
 
 <style lang="scss" scoped>
 .content {
-  height: 10px;
+  height: 1000px;
 }
 </style>

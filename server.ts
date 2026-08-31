@@ -1,8 +1,9 @@
 import "dotenv/config";
-import express from "express";
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
 import { Pool } from "pg";
 
-const app = express();
+const app = new Hono();
 const port = process.env.SERVER_PORT ? Number(process.env.SERVER_PORT) : 3001;
 
 const pool = new Pool({
@@ -13,18 +14,18 @@ const pool = new Pool({
   password: process.env.DATABASE_PASSWORD,
 });
 
-app.get("/api/technologies", async (_req, res) => {
+app.get("/api/technologies", async (c) => {
   try {
     const result = await pool.query(
       "SELECT name, confidence, category FROM technologies ORDER BY category, confidence DESC",
     );
-    res.json(result.rows);
+    return c.json(result.rows);
   } catch (error) {
     console.error("Failed to fetch technologies", error);
-    res.status(500).json({ error: "Failed to fetch technologies" });
+    return c.json({ error: "Failed to fetch technologies" }, 500);
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+serve({ fetch: app.fetch, port }, (info) => {
+  console.log(`Server listening on http://localhost:${info.port}`);
 });

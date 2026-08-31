@@ -23,6 +23,5 @@ function navigateHome() {
 <style lang="scss" scoped>
 .footer {
   height: 30rem;
-  background-color: red;
 }
 </style>
