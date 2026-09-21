@@ -4,6 +4,10 @@
 
 body {
   margin: 0;
+
+  &:has(.flyout-overlay) {
+    overflow-y: hidden;
+  }
 }
 
 #app {

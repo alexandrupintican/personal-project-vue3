@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import type { Technology } from "@/types/models/TechnologyModel";
+import api from "@/api/api";
 import { TechnologyModel } from "@/models/TechnologyModel";
 import ConfidenceRating from "@/components/ui/ConfidenceRating.vue";
 
@@ -8,10 +8,8 @@ const stack = ref<TechnologyModel[]>([]);
 const inProgress = ref<TechnologyModel[]>([]);
 
 async function getStack() {
-  const response = await fetch("/api/technologies");
-  const data: Technology[] = await response.json();
+  const data = await api.technologyService.getTechnologies();
   const technologies = data.map((tech) => new TechnologyModel(tech));
-  console.log(data);
   stack.value = technologies.filter((tech) => tech.getCategory() === "stack");
   inProgress.value = technologies.filter(
     (tech) => tech.getCategory() === "in_progress",
