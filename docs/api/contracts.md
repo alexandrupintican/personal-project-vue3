@@ -84,11 +84,48 @@ All non-2xx responses use this shape:
 
 ## Endpoints
 
-_No endpoints have been implemented in `personal-info-service` yet. The
-frontend's temporary Hono placeholder currently serves `GET /api/technologies`
-directly against Postgres (not documented as a real contract entry below,
-since it's expected to be superseded once the equivalent lands in
-`personal-info-service` behind the gateway)._
+### `GET /api/v1/technologies`
+
+- **Purpose:** List all technologies/skills shown on the "about me" page,
+  each with a self-rated confidence level. Small, bounded reference data —
+  returned as a plain JSON array, not the paginated envelope above (this
+  list isn't expected to grow into a paginated resource).
+- **Auth required:** no (auth mechanism not yet decided for this project —
+  see "Authentication & authorization" above; this endpoint has no
+  authorization requirement regardless of what's eventually decided).
+- **Request DTO:** none (no path/query params).
+- **Response DTO (200):**
+  ```ts
+  interface TechnologyResponse {
+    name: string;
+    category: "stack" | "in_progress";
+    confidence: number; // 1-5
+  }
+  // Response body: TechnologyResponse[]
+  ```
+  `category` is backed by a native Postgres enum (`technology_category`,
+  see ADR-0005) with exactly two values today: `stack`, `in_progress`. The
+  frontend's existing `Technology` TS model types this field as a plain
+  `string`, which already accepts these values without a contract change.
+  Ordered by `category`, then `confidence` descending within each category
+  (matches the old Hono placeholder's `ORDER BY category, confidence DESC`)
+  — note this is the enum's *declared* order (`stack` before `in_progress`),
+  not alphabetical.
+- **Error responses:** `500` (standard error envelope above) on any
+  unexpected failure (e.g. database unreachable). No `4xx` cases today (no
+  request body/params to validate).
+- **Owning service:** `personal-info-service`
+- **Status:** implemented
+
+  Replaced the frontend's temporary Hono placeholder (`GET
+  /api/technologies`, unversioned) — see
+  `personal-project-vue3/server.ts`. The frontend has been repointed:
+  `personal-project-vue3/src/api/api.ts` now calls `/api/v1/technologies`,
+  proxied in dev by `vite.config.js` (`server.proxy`) directly to
+  `personal-info-service` at `http://localhost:8080` (started via
+  `mvnw.cmd spring-boot:run` in that repo — no `Dockerfile` for the app
+  exists yet). The Hono placeholder's DB-backed route was removed; revisit
+  this proxy target once the API Gateway (ADR-0002) exists.
 
 Add one entry per endpoint as it's designed or built, in this format:
 

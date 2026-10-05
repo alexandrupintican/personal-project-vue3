@@ -15,14 +15,52 @@ info:
 servers:
   - url: /api/v1
     description: Relative to the app origin (dev: proxied by Vite to the backend/gateway)
-paths: {}
-  # Add paths here as endpoints are implemented, e.g.:
-  # /orders:
-  #   get:
-  #     summary: List orders
-  #     ...
+paths:
+  /technologies:
+    get:
+      summary: List technologies
+      description: >
+        Returns every technology/skill shown on the "about me" page, each
+        with a self-rated confidence level. Small, bounded reference data —
+        returned as a plain array, not the paginated envelope (see
+        docs/api/contracts.md). Replaced the frontend's temporary Hono
+        placeholder (GET /api/technologies, unversioned) — the frontend is
+        repointed to this endpoint.
+      operationId: listTechnologies
+      tags: [Technologies]
+      responses:
+        "200":
+          description: Technologies ordered by category, then confidence descending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TechnologyResponse'
+        "500":
+          description: Unexpected server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    TechnologyResponse:
+      type: object
+      required: [name, category, confidence]
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          enum: [stack, in_progress]
+          description: >
+            Backed by the native Postgres enum technology_category in the
+            personaldb database (see ADR-0005 in docs/decisions).
+        confidence:
+          type: integer
+          minimum: 1
+          maximum: 5
     ErrorResponse:
       type: object
       required: [status, error, message, path, timestamp]

@@ -28,7 +28,7 @@ function navigateHome() {
 }
 
 .logo-container {
-  background-color: var(--color-secondary);
+  background-color: var(--color-accent-1);
   display: flex;
   align-items: center;
   justify-content: center;

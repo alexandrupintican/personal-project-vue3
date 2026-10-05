@@ -38,14 +38,38 @@ not, and should not be invented as a side effect of an unrelated feature.
 ## Current interim state (as of 2026-09-16)
 
 - **Frontend repo (`personal-project-vue3`)** ships a small temporary
-  Hono/Node backend (`server.ts`) that queries Postgres directly
-  (`GET /api/technologies`). This is a **placeholder standing in for the
-  API Gateway** and is expected to be retired once the gateway exists.
-- **Backend repo (`personal-info-service`)** is a freshly scaffolded Spring
-  Boot 4.1.1 / Java 25 application — no controllers/services/entities yet.
-  It uses `spring-boot-starter-security-oauth2-client` (OAuth2 **Client**,
-  not Resource Server) and Postgres via `spring-boot-docker-compose`
-  (`compose.yaml`, host port `5433`).
+  Hono/Node backend (`server.ts`) as a **placeholder standing in for the
+  API Gateway**, expected to be retired once the gateway exists. It no
+  longer queries Postgres directly — its `GET /api/technologies` DB-backed
+  route was removed now that `GET /api/v1/technologies` is implemented by
+  `personal-info-service`. The frontend calls that service directly for
+  local dev via a `vite.config.js` proxy (`/api/v1/*` → `http://localhost:8080`,
+  where `personal-info-service` runs via `mvnw.cmd spring-boot:run` — there is
+  no `Dockerfile` for the app itself yet; `compose.yaml` only provisions a
+  Postgres container that this feature currently doesn't even use, see
+  ADR-0005).
+- **Backend repo (`personal-info-service`)** is a Spring Boot 4.1.1 / Java 25
+  application. It has its first real endpoint (`GET /api/v1/technologies`,
+  see `../api/contracts.md`), established as the reusable layered pattern
+  (entity → repository → service → controller → DTO, Flyway migrations,
+  centralized `@RestControllerAdvice` error handling) for endpoints that
+  follow. It uses `spring-boot-starter-security-oauth2-client` (OAuth2
+  **Client**, not Resource Server). Because no auth mechanism is decided
+  yet, a temporary `SecurityConfig`
+  (`com.example.personalinfoservice.common.security.SecurityConfig`) permits
+  all requests — otherwise Spring Security's default lockdown (triggered by
+  the OAuth2 client starter being on the classpath) would 401 every
+  endpoint. Replace it with real rules once auth is decided.
+- **Database reality check (see ADR-0005):** the `technologies` data does
+  **not** live in this repo's `compose.yaml`-provisioned Postgres
+  (`localhost:5433`, db `mydatabase`) — that instance is currently unused by
+  any feature. It lives in a pre-existing, externally-managed, native
+  Postgres install on the dev machine (`localhost:5432`, db `personaldb`),
+  which the frontend's Hono placeholder was already reading from. This
+  service's datasource points there. `spring-boot-docker-compose`'s
+  auto-start still works mechanically but no longer provisions the actual
+  datastore this feature needs — don't assume `compose.yaml` reflects where
+  data lives without checking the current datasource config and ADR-0005.
 - **New backend business logic goes into `personal-info-service`**, not into
   the Hono placeholder — otherwise it will need to be re-implemented when
   Hono is retired.
@@ -70,7 +94,7 @@ the already-decided gateway must be justified in an ADR.
 | Service | Owns (business logic) | Owns (database) | Notes |
 |---|---|---|---|
 | API Gateway | Routing, cross-cutting concerns (TBD: auth termination, rate limiting) | none | Planned, not yet built. Technology TBD. |
-| personal-info-service | TBD — currently scaffolded with no endpoints. Expected to at least absorb what the temporary Hono `GET /api/technologies` endpoint does today. | Postgres (`mydatabase`, via docker-compose, host port 5433) | First/primary backend service. |
+| personal-info-service | Technologies/skills reference data (`GET /api/v1/technologies`, see `../api/contracts.md`) — the first endpoint, absorbed from the temporary Hono `GET /api/technologies` placeholder. More business capabilities land here as they're built. | Postgres `personaldb` (pre-existing, externally-managed native install, `localhost:5432` — **not** this repo's `compose.yaml` instance on port 5433, which is currently unused; see ADR-0005), schema managed by Flyway migrations under `src/main/resources/db/migration`. | First/primary backend service. |
 
 Rule: **a service's database is never accessed directly by another service.**
 Cross-service reads/writes happen over REST (or an event, when eventual

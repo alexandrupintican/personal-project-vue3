@@ -3,6 +3,7 @@ import usePages from "@/composables/usePages";
 import { PageAliases } from "@/utils/pages";
 import AppLogo from "@/assets/svg/logo.svg";
 import StackFooter from "@/components/footer/StackFooter.vue";
+import ContactSection from "@/components/footer/ContactSection.vue";
 
 const { setPage } = usePages();
 
@@ -14,14 +15,14 @@ function navigateHome() {
 <template>
   <section class="grid footer">
     <StackFooter />
-    <div class="col--6">
-      <span>2nd part of footer</span>
-    </div>
+    <ContactSection />
   </section>
 </template>
 
 <style lang="scss" scoped>
 .footer {
-  height: 30rem;
+  min-height: 20rem;
+  padding: 3rem 0;
+  border-top: 1px solid var(--border);
 }
 </style>

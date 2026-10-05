@@ -1,26 +1,22 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import api from "@/api/api";
-import { TechnologyModel } from "@/models/TechnologyModel";
+import { computed, onMounted } from "vue";
+import { useTechnologies } from "@/composables";
 import ConfidenceRating from "@/components/ui/ConfidenceRating.vue";
 
-const stack = ref<TechnologyModel[]>([]);
-const inProgress = ref<TechnologyModel[]>([]);
+const { technologiesRef, loadTechnologies } = useTechnologies();
 
-async function getStack() {
-  const data = await api.technologyService.getTechnologies();
-  const technologies = data.map((tech) => new TechnologyModel(tech));
-  stack.value = technologies.filter((tech) => tech.getCategory() === "stack");
-  inProgress.value = technologies.filter(
-    (tech) => tech.getCategory() === "in_progress",
-  );
-}
+const stack = computed(() =>
+  technologiesRef.value.filter((tech) => tech.getCategory() === "stack"),
+);
+const inProgress = computed(() =>
+  technologiesRef.value.filter((tech) => tech.getCategory() === "in_progress"),
+);
 
-onMounted(getStack);
+onMounted(loadTechnologies);
 </script>
 
 <template>
-  <div class="col--6 tech-stack-container">
+  <div class="col--12 col__sm--6 tech-stack-container">
     <div>
       <div class="title">Stack</div>
       <div v-for="(tech, index) in stack" :key="index">

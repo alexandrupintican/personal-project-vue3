@@ -15,7 +15,9 @@ yarn branch        # interactive helper (tools/branch.sh) to cut a feature-/chor
 
 Frontend and backend are run as two separate processes in dev (`yarn dev` + `yarn server`); there is no single command that starts both.
 
-`.env` (gitignored) is required for the backend: `SERVER_PORT`, `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`. `CLIENT_PORT` is also defined there but the Vite dev server port is actually hardcoded in `vite.config.js` (`server.port`), not read from this var.
+`.env` (gitignored) is required for the backend: `SERVER_PORT`. `CLIENT_PORT` is also defined there but the Vite dev server port is actually hardcoded in `vite.config.js` (`server.port`), not read from this var.
+
+The `personal-info-service` Spring Boot app (sibling repo, run via `docker compose up` there) must be running and reachable at `http://localhost:8080` for `/api/v1/*` calls (e.g. technologies data) to resolve in dev — see `docs/architecture/README.md` and `docs/api/contracts.md`.
 
 There is no test suite and no lint/format script defined in package.json — ESLint and Prettier are installed as devDependencies and wired into the editor (`.vscode/settings.json`: format-on-save + `source.fixAll` via `esbenp.prettier-vscode`), but there is no committed ESLint/Prettier config file and no CLI script to invoke them from the terminal.
 
@@ -39,14 +41,14 @@ State that needs to survive across component instances (like `pageRef`/`layoutRe
 
 When adding a new composable that needs shared, app-wide reactive state, follow this same `initVault` get-or-create pattern rather than introducing a new state library.
 
-### Backend ([server.ts](server.ts))
+### Backend ([server.ts](server.ts)) and `personal-info-service`
 
-A minimal Hono + `pg` API lives at the repo root as a single file, separate from the Vite-built frontend:
+`server.ts` is a minimal Hono API at the repo root, separate from the Vite-built frontend. Per `docs/decisions/architecture-decisions.md` (ADR-0002), it's a temporary stand-in for a not-yet-built API Gateway — new backend business logic goes into the sibling `personal-info-service` Spring Boot repo instead, not here.
 
-- `server.ts` opens a `pg` `Pool` from `DATABASE_*` env vars and exposes routes like `GET /api/technologies` that query Postgres directly and return rows as JSON.
+- `server.ts` currently exposes no routes of its own; the DB-backed `GET /api/technologies` route it used to serve has been retired now that `GET /api/v1/technologies` is implemented by `personal-info-service` (see `docs/api/contracts.md`). Keep adding any *new* placeholder gateway routes here only if they don't already have a home in `personal-info-service`.
 - It has its own TS project, [tsconfig.server.json](tsconfig.server.json), which extends the root `tsconfig.json` but overrides `module`/`moduleResolution` to CommonJS/`node` and narrows `include`/`exclude` to just `server.ts`. This isolation is required: the root tsconfig uses `moduleResolution: "bundler"` for the frontend, and letting the server config's `include` inherit the root's `src/**` glob causes TypeScript to re-check every Vue/frontend file under Node resolution and break `vue`'s package-export resolution. Any new server-side file must be added to this narrowed `include`, not the root tsconfig.
 - `yarn server` runs it via `nodemon` + `ts-node -P tsconfig.server.json`, independent of `yarn dev`.
-- In dev, `vite.config.js`'s `server.proxy` forwards `/api/*` requests to `http://localhost:3001` (the backend), so frontend code can call `fetch("/api/...")` with no CORS handling needed.
+- In dev, `vite.config.js`'s `server.proxy` forwards `/api/v1/*` requests to `http://localhost:8080` (`personal-info-service`, run via `docker compose up` in that repo) and all other `/api/*` requests to `http://localhost:3001` (the Hono placeholder), so frontend code can call `fetch("/api/...")` with no CORS handling needed either way.
 
 ### Response-model wrapper convention
 

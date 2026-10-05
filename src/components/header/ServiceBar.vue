@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import useFlyout from "@/composables/useFlyout";
-import DrawerLogo from "@/assets/svg/drawer.svg";
+import Drawer from "@/assets/svg/drawer.svg";
 import { isSmallDevice } from "@/plugins/breakpoint";
 
 const { openFlyout } = useFlyout();
@@ -11,8 +11,8 @@ function openDrawer() {
 </script>
 
 <template>
-  <div v-if="isSmallDevice">
-    <DrawerLogo class="logo" @click="openDrawer" />
+  <div v-if="isSmallDevice" class="drawer-container">
+    <Drawer class="drawer" @click="openDrawer" />
   </div>
   <div v-else class="service-bar">
     <span class="rand">About me</span>
@@ -24,8 +24,19 @@ function openDrawer() {
 </template>
 
 <style lang="scss" scoped>
+.drawer-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.drawer {
+  fill: var(--color-accent-2);
+}
+
 .service-bar {
-  background-color: var(--color-primary);
+  background-color: var(--color-accent-2);
   color: var(--color-white);
   display: flex;
   align-items: center;

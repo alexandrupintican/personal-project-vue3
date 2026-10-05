@@ -1,9 +1,11 @@
 import type { Technology } from "@/types/models/TechnologyModel";
-
-const API_BASE_URL = "/api";
+import { getEnvVariable } from "@/utils/utils";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
+  const response = await fetch(
+    `${getEnvVariable("VITE_API_URL")}${path}`,
+    init,
+  );
 
   if (!response.ok) {
     throw new Error(`Request to ${path} failed with status ${response.status}`);
