@@ -1,4 +1,4 @@
-import type { Technology } from "@/types/models/Technology";
+import type { Technology } from "@/types/models/TechnologyModel";
 
 export class TechnologyModel {
   private _response: Technology;

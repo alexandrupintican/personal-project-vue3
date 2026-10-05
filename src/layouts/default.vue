@@ -2,14 +2,6 @@
 
 <template>
   <main>
-    <div class="container">
-      <slot />
-    </div>
+    <slot />
   </main>
 </template>
-
-<style lang="scss" scoped>
-.container {
-  width: 1920px;
-}
-</style>

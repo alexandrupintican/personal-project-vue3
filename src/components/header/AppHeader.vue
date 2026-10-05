@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import ServiceBar from "@/components/header/ServiceBar.vue";
+import AppLogo from "@/assets/svg/logo.svg";
 import usePages from "@/composables/usePages";
 import { PageAliases } from "@/utils/pages";
-import AppLogo from "@/assets/svg/logo.svg";
 
 const { setPage } = usePages();
-
 function navigateHome() {
   setPage(PageAliases.HOME_PAGE);
 }
@@ -12,13 +12,11 @@ function navigateHome() {
 
 <template>
   <section class="grid header">
-    <div class="logo-container col--4">
+    <div class="logo-container col--6">
       <AppLogo class="logo" @click="navigateHome" />
     </div>
-    <div class="col--4"></div>
-    <div class="service-bar col--4">
-      <span>About</span>
-      <span>Login</span>
+    <div class="service-bar-container col--6">
+      <ServiceBar />
     </div>
   </section>
 </template>
@@ -30,7 +28,7 @@ function navigateHome() {
 }
 
 .logo-container {
-  background-color: var(--color-secondary);
+  background-color: var(--color-accent-1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,15 +38,9 @@ function navigateHome() {
   cursor: pointer;
 }
 
-.service-bar {
-  background-color: var(--color-primary);
-  color: var(--color-white);
+.service-bar-container {
   display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-}
-
-.end {
-  background-color: var(--color-secondary);
+  align-content: center;
+  justify-content: flex-end;
 }
 </style>

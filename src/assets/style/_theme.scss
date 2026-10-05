@@ -5,12 +5,16 @@
   --color-secondary: #{$color-secondary};
   --color-white: #{$color-white};
   --color-black: #{$color-black};
+  --color-accent-1: #{$color-accent-1};
+  --color-accent-2: #{$color-accent-2};
+  --surface: #{$color-surface};
+  --text-muted: #{$color-text-muted};
 
   --container-max-width: #{$container-max-width};
 
-  --text: var(--color-black);
-  --background: var(--color-white);
-  --border: #e5e4e7;
+  --text: var(--color-white);
+  --background: #0a0a0f;
+  --border: #27272f;
 
   --font-family-primary: #{$font-family-primary};
 

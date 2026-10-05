@@ -1,0 +1,14 @@
+export { default as ArrowTop } from "@/assets/svg/arrow-top.svg";
+export { default as ArrowUpRight } from "@/assets/svg/arrow-up-right.svg";
+export { default as Briefcase } from "@/assets/svg/briefcase.svg";
+export { default as Calendar } from "@/assets/svg/calendar.svg";
+export { default as Code } from "@/assets/svg/code.svg";
+export { default as Download } from "@/assets/svg/download.svg";
+export { default as Github } from "@/assets/svg/github.svg";
+export { default as Linkedin } from "@/assets/svg/linkedin.svg";
+export { default as Mail } from "@/assets/svg/mail.svg";
+export { default as Phone } from "@/assets/svg/phone.svg";
+export { default as Smile } from "@/assets/svg/smile.svg";
+export { default as Trophy } from "@/assets/svg/trophy.svg";
+export { default as Twitter } from "@/assets/svg/twitter.svg";
+export { default as Zap } from "@/assets/svg/zap.svg";
