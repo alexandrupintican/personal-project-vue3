@@ -16,18 +16,33 @@ below).
 
 ## Current project context (verify before assuming this is stale)
 
-- This repo currently ships a small temporary Hono/Node backend (`server.ts`)
-  that queries Postgres directly (`GET /api/technologies`). This is a
+- This repo ships a small temporary Hono/Node backend (`server.ts`) as a
   **placeholder standing in for a planned API Gateway** (see ADR-0002 in
-  `/docs/decisions/architecture-decisions.md`) and is expected to be retired.
+  `/docs/decisions/architecture-decisions.md`). It currently has **no
+  routes** — its old DB-backed `GET /api/technologies` was retired.
 - The real backend is `personal-info-service` — a Spring Boot 4.1.1 / Java 25
-  service owned by `java-springboot-specialist`, freshly scaffolded with no
-  endpoints yet as of this writing.
+  service owned by `java-springboot-specialist`. Its one implemented
+  endpoint is `GET /api/v1/technologies` (see `/docs/api/contracts.md`),
+  reached in dev through the Vite proxy (`/api/v1/*` → `localhost:8080`;
+  start it with `mvnw.cmd spring-boot:run` in that repo).
+- Profile, stats, experience, testimonials and social links are rendered from
+  `src/mock/*.ts`. These are **not** contracts — no endpoint for them exists
+  in `/docs/api/contracts.md` yet. Replacing a mock with real data starts
+  with a contract entry (see "API collaboration rules" below), not with
+  guessing a response shape from the mock.
 - Do not build new frontend features against the Hono placeholder as if it
-  were the permanent contract. If a feature needs backend data beyond what
-  Hono already serves, treat it as a new endpoint request against
-  `personal-info-service` (via the API collaboration rules below), not as an
-  extension of `server.ts`.
+  were the permanent contract. Treat any new backend data need as a new
+  endpoint request against `personal-info-service`, not as an extension of
+  `server.ts`.
+- This repo has established conventions that replace the textbook Vue
+  defaults listed below — read `CLAUDE.md` for details before writing code:
+  no Pinia (shared state uses the `vault` plugin + get-or-create
+  composables), a single catch-all route with in-app page switching
+  (`usePages`), raw response types in `src/types/models/` wrapped by
+  `getX()` accessor classes in `src/models/`, a typed API layer in
+  `src/api/api.ts`, and a global flyout system (`useFlyout`). There is no
+  test runner or lint script yet; adding Vitest/Playwright is a setup task
+  to confirm with the user, not something to assume exists.
 - Auth mechanism between the frontend and the gateway/backend is **not yet
   decided** (`personal-info-service` is currently set up as an OAuth2
   *Client*, not a Resource Server issuing bearer JWTs) — see

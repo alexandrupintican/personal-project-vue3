@@ -15,20 +15,20 @@ yarn branch        # interactive helper (tools/branch.sh) to cut a feature-/chor
 
 Frontend and backend are run as two separate processes in dev (`yarn dev` + `yarn server`); there is no single command that starts both.
 
-`.env` (gitignored) is required for the backend: `SERVER_PORT`. `CLIENT_PORT` is also defined there but the Vite dev server port is actually hardcoded in `vite.config.js` (`server.port`), not read from this var.
+`.env` (gitignored) holds `SERVER_PORT` (Hono placeholder port) and `VITE_API_URL` (base path the frontend API client prefixes onto every request — `/api/v1` in dev, so `"/technologies"` resolves to `/api/v1/technologies` and hits the Vite proxy). `CLIENT_PORT` is also defined there but the Vite dev server port is actually hardcoded in `vite.config.js` (`server.port`), not read from this var.
 
-The `personal-info-service` Spring Boot app (sibling repo, run via `docker compose up` there) must be running and reachable at `http://localhost:8080` for `/api/v1/*` calls (e.g. technologies data) to resolve in dev — see `docs/architecture/README.md` and `docs/api/contracts.md`.
+The `personal-info-service` Spring Boot app (sibling repo, typically `C:/Users/alexa/IdeaProjects/personal-info-service`; run via `mvnw.cmd spring-boot:run` there — its `compose.yaml` only provisions an unused Postgres, not the app; see ADR-0005) must be running and reachable at `http://localhost:8080` for `/api/v1/*` calls (e.g. technologies data) to resolve in dev — see `docs/architecture/README.md` and `docs/api/contracts.md`.
 
 There is no test suite and no lint/format script defined in package.json — ESLint and Prettier are installed as devDependencies and wired into the editor (`.vscode/settings.json`: format-on-save + `source.fixAll` via `esbenp.prettier-vscode`), but there is no committed ESLint/Prettier config file and no CLI script to invoke them from the terminal.
 
-Docker: `docker build -t personal-project-vue3 .` then `docker run -p 8080:80 personal-project-vue3` (Dockerfile runs `yarn dev`, not a production server — it's a dev-mode container). The Dockerfile only runs the frontend; it does not start the backend.
+Docker: `docker build -t personal-project-vue3 .` then `docker run -p 3000:3000 personal-project-vue3` (Dockerfile runs `yarn dev`, not a production server — it's a dev-mode container; Vite isn't configured with `server.host`, so it binds to localhost inside the container and needs `--host` to be reachable). The Dockerfile only runs the frontend; it does not start the backend. The `docker/` and `k8s/` directories exist but are currently empty.
 
 ## Architecture
 
 This is a single-page personal portfolio. The routing/page model is intentionally not one-Vue-Router-route-per-page:
 
 - `vue-router` ([src/router/index.ts](src/router/index.ts)) has exactly one catch-all route (`/:pathMatch(.*)*`) that always renders [src/views/PageView.vue](src/views/PageView.vue).
-- Actual "page" selection happens inside `PageView.vue` via a `pageRef` from the `usePages` composable, which switches between components in a local `Pages` map (`homePage`, `flowerPage` from [src/utils/pages.ts](src/utils/pages.ts) `PageAliases` enum). Adding a new page means adding an entry to the `Pages` map in `PageView.vue`, an alias in `PageAliases`, and calling `setPage(...)`.
+- Actual "page" selection happens inside `PageView.vue` via a `pageRef` from the `usePages` composable, which switches between components in a local `Pages` map (currently only `homePage`, from the [src/utils/pages.ts](src/utils/pages.ts) `PageAliases` enum). Adding a new page means adding an entry to the `Pages` map in `PageView.vue`, an alias in `PageAliases`, and calling `setPage(...)`.
 - Layout selection works the same way one level up: `AppRender.vue` → `App.vue` picks a layout component from a local `Layouts` map via the `useLayout` composable.
 
 ### The "vault" DI store ([src/plugins/vault.ts](src/plugins/vault.ts))
@@ -37,7 +37,7 @@ State that needs to survive across component instances (like `pageRef`/`layoutRe
 
 - `vaultPlugin` provides a single empty `vault` object into the app via `app.provide("vault", vault)`.
 - `initVault<T>(vaultKey)` (called from within a composable) injects that vault, lazily creates a namespace under `vaultKey`, and returns `{ get, storeAndGet }`.
-- The convention used by every composable in `src/composables/` (`useLayout.ts`, `usePages.ts`) is: check `storage.get(key)` for an already-initialized instance; if present return it as a singleton; otherwise create the refs/functions and register them with `storage.storeAndGet(key, {...})`.
+- The convention used by every composable in `src/composables/` (`useLayout.ts`, `usePages.ts`, `useFlyout.ts`, `useTechnologies.ts`; all re-exported from `src/composables/index.ts`) is: check `storage.get(key)` for an already-initialized instance; if present return it as a singleton; otherwise create the refs/functions and register them with `storage.storeAndGet(key, {...})`.
 
 When adding a new composable that needs shared, app-wide reactive state, follow this same `initVault` get-or-create pattern rather than introducing a new state library.
 
@@ -48,18 +48,39 @@ When adding a new composable that needs shared, app-wide reactive state, follow 
 - `server.ts` currently exposes no routes of its own; the DB-backed `GET /api/technologies` route it used to serve has been retired now that `GET /api/v1/technologies` is implemented by `personal-info-service` (see `docs/api/contracts.md`). Keep adding any *new* placeholder gateway routes here only if they don't already have a home in `personal-info-service`.
 - It has its own TS project, [tsconfig.server.json](tsconfig.server.json), which extends the root `tsconfig.json` but overrides `module`/`moduleResolution` to CommonJS/`node` and narrows `include`/`exclude` to just `server.ts`. This isolation is required: the root tsconfig uses `moduleResolution: "bundler"` for the frontend, and letting the server config's `include` inherit the root's `src/**` glob causes TypeScript to re-check every Vue/frontend file under Node resolution and break `vue`'s package-export resolution. Any new server-side file must be added to this narrowed `include`, not the root tsconfig.
 - `yarn server` runs it via `nodemon` + `ts-node -P tsconfig.server.json`, independent of `yarn dev`.
-- In dev, `vite.config.js`'s `server.proxy` forwards `/api/v1/*` requests to `http://localhost:8080` (`personal-info-service`, run via `docker compose up` in that repo) and all other `/api/*` requests to `http://localhost:3001` (the Hono placeholder), so frontend code can call `fetch("/api/...")` with no CORS handling needed either way.
+- In dev, `vite.config.js`'s `server.proxy` forwards `/api/v1/*` requests to `http://localhost:8080` (`personal-info-service`) and all other `/api/*` requests to `http://localhost:3001` (the Hono placeholder), so frontend code can call `fetch("/api/...")` with no CORS handling needed either way.
 
 ### Response-model wrapper convention
 
 Raw API/DB response shapes (defined as plain types under `src/types/models/`, e.g. `AppResponse`, `Technology`) are not consumed directly in components. Each has a paired class in `src/models/` (`AppModel`, `TechnologyModel`) that wraps the raw object and exposes `getX()` accessor methods instead of raw field access — see `AppModel.getTitle()`/`getMetaTags()` and `TechnologyModel.getName()`/`getConfidence()`/`getCategory()`. Follow this wrapper pattern for new API-backed data rather than typing components directly against the raw response shape.
+
+### API client and mock data
+
+- All HTTP calls go through [src/api/api.ts](src/api/api.ts): a `request<T>()` fetch wrapper (prefixes `VITE_API_URL`, throws on non-2xx) plus one `createXService()` factory per resource, exported as `api.<resource>Service`. Don't call `fetch` from components.
+- Composables own loading: `useTechnologies` stores `TechnologyModel[]` in the vault and memoizes its load promise, so multiple sections (`HeroSection`, `SkillsSection`) can call `loadTechnologies()` on mount without duplicate requests. Follow this for new API-backed data.
+- Only `GET /api/v1/technologies` is real today. Profile, stats, experience, testimonials and social links are served from `src/mock/*.ts`, typed with the same raw types from `src/types/models/` and wrapped in the same `src/models/` classes as real data would be. Each mock is a stand-in for a future endpoint that does **not** exist in `docs/api/contracts.md` yet — when replacing a mock, add the contract entry first (see the API collaboration rules in `.claude/agents/vue3-typescript-specialist.md`), then add the service + composable and drop the mock import.
+- `src/types/api/api.d.ts` (`Technologies`/`TechnologyStack`) is a leftover from the old Hono response shape and is unused.
+
+### Flyouts ([src/composables/useFlyout.ts](src/composables/useFlyout.ts))
+
+Drawers/modals use a single global flyout slot rather than per-component modals:
+
+- `App.vue` mounts `FlyoutManager.vue` once. It renders `Flyout.vue` (teleported to `<body>`; overlay, panel, transitions) and looks up the active content component by name in its local `flyouts` map.
+- `useFlyout().openFlyout(name, { openFrom, transition, fullscreen })` opens one; only one flyout is open at a time and further requests are queued until `closeFlyout()`.
+- Adding a flyout: create the component in `src/components/flyouts/`, add its name to the `FlyoutName` union in `useFlyout.ts`, and register it in `FlyoutManager.vue`'s `flyouts` map.
+
+### Responsive helpers and icons
+
+- [src/plugins/breakpoint.ts](src/plugins/breakpoint.ts) exports module-level `computed`s (`isMobile`, `isTablet`, `isSmallDevice`, …) driven by a window resize listener — import them directly; it is not an installed Vue plugin. `ServiceBar.vue` uses `isSmallDevice` to swap the nav for a drawer button that opens the `ServiceBarDrawer` flyout.
+- Icons: SVGs live in `src/assets/svg/` and are re-exported from `src/assets/svg/index.ts`. `AppIcon.vue` renders them by kebab-case `name`; adding an icon means adding the SVG, the barrel export, and an entry in `AppIcon`'s `icons` map. One-off SVGs (e.g. `logo.svg`, `drawer.svg`) are imported directly.
 
 ### Other structure
 
 - `src/entry.ts` → `src/main.ts` (`createCustomApp`) → `AppRender.vue` (wraps `App.vue` in `<Suspense>`) → `App.vue` (layout switch + `<RouterView>`) → `PageView.vue` (page switch).
 - `@unhead/vue` handles `<head>`/meta tags per page (see `useHead` call in [src/pages/HomePage.vue](src/pages/HomePage.vue)); `AppModel` ([src/models/AppModel.ts](src/models/AppModel.ts)) wraps an `AppResponse` payload (`title`, `_metaTags`) for this purpose.
 - Path aliases (in both `vite.config.js` and `tsconfig.json`): `@` → `src/`, `@globalStyle` → `src/assets/style/`.
-- SCSS partials live in `src/assets/style/` (`_variables.scss`, `_mixins.scss`, `_theme.scss`, `_keyframes.scss`, `global.scss`).
+- SCSS partials live in `src/assets/style/` (`_variables.scss`, `_mixins.scss`, `_theme.scss`, `global.scss`).
 - In dev mode, [vite/devSingleCss.ts](vite/devSingleCss.ts) is a custom Vite plugin that concatenates every transformed `.scss` module into one compiled stylesheet served at `/@dev-bundled-styles.css` and injected into `<head>`, rather than relying on Vite's normal per-module CSS injection — this exists to make the dev experience match the single-bundle CSS output (`build.cssCodeSplit: false`) used in production.
 - SVGs are imported as Vue components via `vite-svg-loader`.
+- `docs/` (`api/`, `architecture/`, `decisions/`) is mirrored with the `personal-info-service` repo — when you change a file there, update the sibling copy too (or tell the user it needs carrying over).
 - Env vars are typed in [src/types/env.d.ts](src/types/env.d.ts) (`ImportMetaEnv`) — add new `VITE_*` vars there.
